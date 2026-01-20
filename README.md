@@ -10,7 +10,7 @@ A high-performance, low-allocation keyed lock implementation for .NET that ensur
 ✅ **Thread-Safe**: Fully thread-safe for concurrent access  
 ✅ **Flexible API**: Support for sync/async, timeouts, and cancellation tokens  
 ✅ **String Keys**: Optimized for string-based locking with optional case-insensitive comparison  
-✅ **.NET Standard 2.0**: Compatible with .NET Framework, .NET Core, and .NET 5+
+✅ **.NET Standard 2.1**: Compatible with .NET Core 3.0+, .NET 5+, and modern platforms
 
 ## Installation
 
@@ -229,15 +229,14 @@ public class RateLimiter
 
 ## Requirements
 
-- .NET Standard 2.0 or higher
+- .NET Standard 2.1 or higher
 - C# 7.3 or higher
 
 ## Compatible With
 
-- .NET Framework 4.6.1+
-- .NET Core 2.0+
-- .NET 5, 6, 7, 8+
-- Xamarin
+- .NET Core 3.0+
+- .NET 5, 6, 7, 8, 9+
+- Xamarin (iOS 12.16+, Android 10.0+)
 - Unity 2021.2+
 
 ## Examples

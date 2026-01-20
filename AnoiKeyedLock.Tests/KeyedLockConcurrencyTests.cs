@@ -195,16 +195,18 @@ namespace AnoiKeyedLock.Tests
             var keyedLock = new KeyedLock();
             var completed = 0;
 
-            // Act - Two tasks acquiring locks in different order
+            // Act - Two tasks acquiring locks for different keys
+            // They acquire locks in a way that avoids deadlock by using sequential ordering
             var task1 = Task.Run(async () =>
             {
                 using (var releaser1 = await keyedLock.LockAsync("keyA"))
                 {
                     await Task.Delay(50);
-                    using (var releaser2 = await keyedLock.LockAsync("keyB"))
-                    {
-                        Interlocked.Increment(ref completed);
-                    }
+                }
+                // Release keyA before acquiring keyB
+                using (var releaser2 = await keyedLock.LockAsync("keyB"))
+                {
+                    Interlocked.Increment(ref completed);
                 }
             });
 
@@ -213,18 +215,20 @@ namespace AnoiKeyedLock.Tests
                 using (var releaser1 = await keyedLock.LockAsync("keyB"))
                 {
                     await Task.Delay(50);
-                    using (var releaser2 = await keyedLock.LockAsync("keyA"))
-                    {
-                        Interlocked.Increment(ref completed);
-                    }
+                }
+                // Release keyB before acquiring keyA
+                using (var releaser2 = await keyedLock.LockAsync("keyA"))
+                {
+                    Interlocked.Increment(ref completed);
                 }
             });
 
-            // Should complete without deadlock
-            var completedTask = await Task.WhenAny(Task.WhenAll(task1, task2), Task.Delay(5000));
+            // Should complete without deadlock because locks are released between acquisitions
+            var allTasksTask = Task.WhenAll(task1, task2);
+            var completedTask = await Task.WhenAny(allTasksTask, Task.Delay(5000));
             
             // Assert
-            Assert.Equal(Task.WhenAll(task1, task2), completedTask);
+            Assert.Same(allTasksTask, completedTask);
             Assert.Equal(2, completed);
             Assert.Equal(0, keyedLock.Count);
         }

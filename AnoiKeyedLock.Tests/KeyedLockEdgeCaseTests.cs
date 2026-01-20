@@ -32,7 +32,7 @@ namespace AnoiKeyedLock.Tests
             var keyedLock = new KeyedLock();
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => keyedLock.LockAsync(key));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await keyedLock.LockAsync(key));
         }
 
         [Fact]
@@ -163,17 +163,11 @@ namespace AnoiKeyedLock.Tests
             const string key = "negative-timeout-key";
 
             // Act & Assert
-            try
+            // Use -2 which is invalid (only -1 is special case for infinite wait)
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
             {
-                // SemaphoreSlim may throw with negative timeout
-                var result = await keyedLock.TryLockAsync(key, TimeSpan.FromMilliseconds(-1));
-                // If it doesn't throw, it should return false
-                Assert.False(result.success);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // This is also acceptable behavior
-            }
+                await keyedLock.TryLockAsync(key, TimeSpan.FromMilliseconds(-2));
+            });
         }
 
         [Fact]

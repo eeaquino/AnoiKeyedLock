@@ -228,4 +228,4 @@ public class ConnectionManager
 - The lock is **not reentrant** - the same thread cannot acquire the same key twice
 - Keys are automatically removed from internal storage when the last lock is released
 - The struct-based releaser ensures minimal GC pressure
-- Compatible with .NET Standard 2.0 and higher
+- Compatible with .NET Standard 2.1 and higher

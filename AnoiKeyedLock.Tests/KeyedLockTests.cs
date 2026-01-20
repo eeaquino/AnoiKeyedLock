@@ -321,7 +321,7 @@ namespace AnoiKeyedLock.Tests
             var keyedLock = new KeyedLock();
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => keyedLock.LockAsync(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await keyedLock.LockAsync(null));
         }
 
         [Fact]
@@ -358,14 +358,15 @@ namespace AnoiKeyedLock.Tests
             const string key = "test-key";
             var cts = new CancellationTokenSource();
 
+
             // Act
             using (var firstLock = await keyedLock.LockAsync(key))
             {
                 cts.Cancel();
                 
                 // Assert
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => 
-                    keyedLock.LockAsync(key, cts.Token));
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => 
+                    await keyedLock.LockAsync(key, cts.Token));
             }
 
             Assert.Equal(0, keyedLock.Count);

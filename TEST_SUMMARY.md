@@ -150,7 +150,7 @@ dotnet-coverage collect -f cobertura -o coverage.cobertura.xml dotnet test
 ## Test Framework
 
 - **Framework:** xUnit 2.x
-- **Target:** .NET (compatible with .NET Standard 2.0 library)
+- **Target:** .NET (compatible with .NET Standard 2.1 library)
 - **Additional Packages:** None required (uses only xUnit and standard libraries)
 
 ## Key Testing Patterns Used

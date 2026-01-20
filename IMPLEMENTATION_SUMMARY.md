@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-A high-performance, low-allocation **string-based keyed lock system** for .NET Standard 2.0 (C# 7.3) that ensures exclusive access per key with automatic resource cleanup.
+A high-performance, low-allocation **string-based keyed lock system** for .NET Standard 2.1 (C# 7.3) that ensures exclusive access per key with automatic resource cleanup.
 
 ## Key Design Decisions
 
@@ -93,7 +93,7 @@ int Count { get; }  // Number of currently tracked keys
 
 - ✅ Keys cannot be `null` or whitespace (`ArgumentNullException` thrown)
 - ✅ Build succeeds with no warnings
-- ✅ Compatible with C# 7.3 and .NET Standard 2.0
+- ✅ Compatible with C# 7.3 and .NET Standard 2.1
 
 ## Files Created
 
