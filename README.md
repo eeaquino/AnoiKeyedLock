@@ -46,6 +46,98 @@ if (keyedLock.TryLock("myKey", TimeSpan.FromSeconds(5), out var releaser))
 }
 ```
 
+## Dependency Injection
+
+AnoiKeyedLock provides built-in support for dependency injection through the `AddKeyedLock()` extension method.
+
+### Setup
+
+First, add the required NuGet package to your project:
+```bash
+dotnet add package Microsoft.Extensions.DependencyInjection
+```
+
+Then register `KeyedLock` in your DI container:
+
+```csharp
+using AnoiKeyedLock;
+using Microsoft.Extensions.DependencyInjection;
+
+// In your Startup.cs or Program.cs
+services.AddKeyedLock();
+
+// Or with custom string comparer (e.g., case-insensitive)
+services.AddKeyedLock(StringComparer.OrdinalIgnoreCase);
+```
+
+### Usage with DI
+
+Once registered, inject `IKeyedLock` into your services:
+
+```csharp
+public class MyService
+{
+    private readonly IKeyedLock _keyedLock;
+
+    public MyService(IKeyedLock keyedLock)
+    {
+        _keyedLock = keyedLock;
+    }
+
+    public async Task ProcessAsync(string id)
+    {
+        using (var releaser = await _keyedLock.LockAsync(id))
+        {
+            // Your synchronized code here
+            await DoWorkAsync(id);
+        }
+    }
+}
+```
+
+### ASP.NET Core Example
+
+```csharp
+// Program.cs or Startup.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Register KeyedLock as a singleton
+builder.Services.AddKeyedLock();
+
+// Register your services
+builder.Services.AddScoped<IUserService, UserService>();
+
+var app = builder.Build();
+
+// Controller usage
+[ApiController]
+[Route("api/[controller]")]
+public class UserController : ControllerBase
+{
+    private readonly IKeyedLock _keyedLock;
+
+    public UserController(IKeyedLock keyedLock)
+    {
+        _keyedLock = keyedLock;
+    }
+
+    [HttpPost("{userId}/process")]
+    public async Task<IActionResult> ProcessUser(string userId)
+    {
+        using (var releaser = await _keyedLock.LockAsync(userId))
+        {
+            // Ensure only one request processes this user at a time
+            await ProcessUserDataAsync(userId);
+            return Ok();
+        }
+    }
+}
+```
+
+### Lifetime
+
+The `KeyedLock` is registered as a **singleton** by default, which is the recommended approach to ensure all parts of your application share the same lock instance for a given key.
+
 ## API Reference
 
 ### Constructor
