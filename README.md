@@ -342,7 +342,7 @@ See `Examples.cs` for comprehensive usage examples including:
 
 ## License
 
-[Your License Here]
+MIT
 
 ## Contributing
 
