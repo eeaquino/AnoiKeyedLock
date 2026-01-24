@@ -10,7 +10,9 @@ A high-performance, low-allocation keyed lock implementation for .NET that ensur
 ✅ **Thread-Safe**: Fully thread-safe for concurrent access  
 ✅ **Flexible API**: Support for sync/async, timeouts, and cancellation tokens  
 ✅ **String Keys**: Optimized for string-based locking with optional case-insensitive comparison  
-✅ **.NET Standard 2.1**: Compatible with .NET Core 3.0+, .NET 5+, and modern platforms
+✅ **Diagnostics**: Built-in `IsLocked()` and `GetActiveKeys()` methods for monitoring  
+✅ **IAsyncDisposable**: Support for `await using` syntax on .NET 8+  
+✅ **Multi-targeting**: Supports .NET Standard 2.1, .NET 8, .NET 9, and .NET 10
 
 ## Installation
 
@@ -148,6 +150,12 @@ var keyedLock = new KeyedLock();
 
 // Case-insensitive comparison
 var keyedLock = new KeyedLock(StringComparer.OrdinalIgnoreCase);
+
+// Custom concurrency settings (for high-throughput scenarios)
+var keyedLock = new KeyedLock(
+    concurrencyLevel: Environment.ProcessorCount * 2,
+    initialCapacity: 100,
+    comparer: StringComparer.Ordinal);
 ```
 
 ### Synchronous Methods
@@ -198,13 +206,40 @@ Task<(bool success, KeyedLockReleaser releaser)> TryLockAsync(
     CancellationToken cancellationToken = default)
 ```
 
-### Properties
+### Properties and Diagnostic Methods
 
 #### `Count`
 Gets the current number of keys being tracked.
 
 ```csharp
 int Count { get; }
+```
+
+#### `IsLocked(string key)`
+Checks if a lock is currently held for the specified key. Useful for diagnostics.
+
+```csharp
+bool IsLocked(string key)
+```
+
+> ⚠️ **Note**: This is a point-in-time check. The lock state may change immediately after this method returns. Do not use for synchronization decisions.
+
+#### `GetActiveKeys()`
+Gets a snapshot of all keys that currently have active locks. Useful for monitoring and debugging.
+
+```csharp
+string[] GetActiveKeys()
+```
+
+### IAsyncDisposable Support (.NET 8+)
+
+On .NET 8 and later, `KeyedLockReleaser` implements `IAsyncDisposable`, enabling the `await using` syntax:
+
+```csharp
+await using (var releaser = await keyedLock.LockAsync("myKey"))
+{
+    await DoWorkAsync();
+}
 ```
 
 ## How It Works
@@ -321,13 +356,14 @@ public class RateLimiter
 
 ## Requirements
 
-- .NET Standard 2.1 or higher
+- .NET Standard 2.1 or higher, or .NET 8/9/10
 - C# 7.3 or higher
 
 ## Compatible With
 
+- .NET Standard 2.1+
 - .NET Core 3.0+
-- .NET 5, 6, 7, 8, 9+
+- .NET 5, 6, 7, 8, 9, 10+
 - Xamarin (iOS 12.16+, Android 10.0+)
 - Unity 2021.2+
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,6 +77,19 @@ namespace AnoiKeyedLock
         /// Gets the current number of keys being tracked.
         /// </summary>
         int Count { get; }
+
+        /// <summary>
+        /// Checks if a lock is currently held for the specified key.
+        /// </summary>
+        /// <param name="key">The key to check.</param>
+        /// <returns>True if the key is currently locked; otherwise, false.</returns>
+        bool IsLocked(string key);
+
+        /// <summary>
+        /// Gets a snapshot of all keys that currently have active locks.
+        /// </summary>
+        /// <returns>An array of keys that are currently being tracked.</returns>
+        string[] GetActiveKeys();
     }
 
     /// <summary>
@@ -97,9 +111,26 @@ namespace AnoiKeyedLock
         /// Initializes a new instance of the KeyedLock class with a custom string comparer.
         /// </summary>
         /// <param name="comparer">The string comparer to use for keys (e.g., StringComparer.OrdinalIgnoreCase).</param>
-        public KeyedLock(IEqualityComparer<string> comparer)
+        public KeyedLock(IEqualityComparer<string>? comparer)
         {
             _semaphores = new ConcurrentDictionary<string, RefCountedSemaphore>(comparer ?? StringComparer.Ordinal);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the KeyedLock class with custom concurrency settings.
+        /// </summary>
+        /// <param name="concurrencyLevel">The estimated number of threads that will update the dictionary concurrently.</param>
+        /// <param name="initialCapacity">The initial number of elements the dictionary can contain.</param>
+        /// <param name="comparer">The string comparer to use for keys (e.g., StringComparer.OrdinalIgnoreCase). If null, uses StringComparer.Ordinal.</param>
+        public KeyedLock(int concurrencyLevel, int initialCapacity, IEqualityComparer<string>? comparer = null)
+        {
+            if (concurrencyLevel < 1)
+                throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), "Concurrency level must be at least 1.");
+            if (initialCapacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), "Initial capacity cannot be negative.");
+
+            _semaphores = new ConcurrentDictionary<string, RefCountedSemaphore>(
+                concurrencyLevel, initialCapacity, comparer ?? StringComparer.Ordinal);
         }
 
         /// <summary>
@@ -304,7 +335,18 @@ namespace AnoiKeyedLock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Release(string key, RefCountedSemaphore semaphore)
         {
-            semaphore.Semaphore.Release();
+            try
+            {
+                semaphore.Semaphore?.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Semaphore was already disposed, ignore
+            }
+            catch (SemaphoreFullException)
+            {
+                // Semaphore was released more times than acquired, ignore
+            }
 
             if (semaphore.Release())
             {
@@ -334,10 +376,40 @@ namespace AnoiKeyedLock
         /// </summary>
         public int Count => _semaphores.Count;
 
+        /// <summary>
+        /// Checks if a lock is currently held for the specified key.
+        /// </summary>
+        /// <param name="key">The key to check.</param>
+        /// <returns>True if the key is currently locked; otherwise, false.</returns>
+        /// <remarks>
+        /// This is a point-in-time check and the lock state may change immediately after this method returns.
+        /// Do not use this method for synchronization decisions.
+        /// </remarks>
+        public bool IsLocked(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return false;
+
+            return _semaphores.TryGetValue(key, out var semaphore) && semaphore.Semaphore?.CurrentCount == 0;
+        }
+
+        /// <summary>
+        /// Gets a snapshot of all keys that currently have active locks.
+        /// </summary>
+        /// <returns>An array of keys that are currently being tracked.</returns>
+        /// <remarks>
+        /// This returns a snapshot of keys at the moment of the call. Keys may be added or removed
+        /// immediately after this method returns. Useful for diagnostics and monitoring.
+        /// </remarks>
+        public string[] GetActiveKeys()
+        {
+            return _semaphores.Keys.ToArray();
+        }
+
         internal sealed class RefCountedSemaphore : IDisposable
         {
             private int _refCount;
-            private SemaphoreSlim _semaphore;
+            private SemaphoreSlim? _semaphore;
 
             public RefCountedSemaphore()
             {
@@ -345,7 +417,7 @@ namespace AnoiKeyedLock
                 _refCount = 1;
             }
 
-            public SemaphoreSlim Semaphore => _semaphore;
+            public SemaphoreSlim? Semaphore => _semaphore;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool TryAddRef()
@@ -384,7 +456,11 @@ namespace AnoiKeyedLock
     /// Disposable struct that releases a keyed lock when disposed.
     /// Using a struct avoids heap allocation.
     /// </summary>
+#if NET8_0_OR_GREATER
+    public struct KeyedLockReleaser : IDisposable, IAsyncDisposable
+#else
     public struct KeyedLockReleaser : IDisposable
+#endif
     {
         private readonly KeyedLock _keyedLock;
         private readonly string _key;
@@ -411,5 +487,21 @@ namespace AnoiKeyedLock
                 _keyedLock.Release(_key, _semaphore);
             }
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Asynchronously releases the lock.
+        /// </summary>
+        /// <returns>A ValueTask representing the asynchronous dispose operation.</returns>
+        /// <remarks>
+        /// This implementation is synchronous as the underlying release operation is fast.
+        /// It is provided to enable the use of 'await using' syntax.
+        /// </remarks>
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return ValueTask.CompletedTask;
+        }
+#endif
     }
 }

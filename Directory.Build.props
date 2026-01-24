@@ -1,0 +1,31 @@
+<Project>
+  
+  <!-- Shared build properties for all projects -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- Package versions per target framework -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <MicrosoftExtensionsDIAbstractionsVersion>6.0.0</MicrosoftExtensionsDIAbstractionsVersion>
+    <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <MicrosoftExtensionsDIAbstractionsVersion>8.0.2</MicrosoftExtensionsDIAbstractionsVersion>
+    <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <MicrosoftExtensionsDIAbstractionsVersion>9.0.5</MicrosoftExtensionsDIAbstractionsVersion>
+    <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <MicrosoftExtensionsDIAbstractionsVersion>10.0.2</MicrosoftExtensionsDIAbstractionsVersion>
+    <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
+  </PropertyGroup>
+
+</Project>

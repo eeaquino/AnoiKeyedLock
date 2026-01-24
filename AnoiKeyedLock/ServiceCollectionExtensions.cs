@@ -25,7 +25,7 @@ namespace AnoiKeyedLock
         /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
         /// <param name="comparer">The string comparer to use for keys (e.g., StringComparer.OrdinalIgnoreCase). If null, uses StringComparer.Ordinal.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection AddKeyedLock(this IServiceCollection services, IEqualityComparer<string> comparer)
+        public static IServiceCollection AddKeyedLock(this IServiceCollection services, IEqualityComparer<string>? comparer)
         {
             if (services == null)
             {
@@ -33,6 +33,25 @@ namespace AnoiKeyedLock
             }
 
             services.AddSingleton<IKeyedLock>(provider => new KeyedLock(comparer));
+            return services;
+        }
+
+        /// <summary>
+        /// Adds KeyedLock as a singleton service with custom concurrency settings.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="concurrencyLevel">The estimated number of threads that will update the dictionary concurrently.</param>
+        /// <param name="initialCapacity">The initial number of elements the dictionary can contain.</param>
+        /// <param name="comparer">The string comparer to use for keys (e.g., StringComparer.OrdinalIgnoreCase). If null, uses StringComparer.Ordinal.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        public static IServiceCollection AddKeyedLock(this IServiceCollection services, int concurrencyLevel, int initialCapacity, IEqualityComparer<string>? comparer = null)
+        {
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            services.AddSingleton<IKeyedLock>(provider => new KeyedLock(concurrencyLevel, initialCapacity, comparer));
             return services;
         }
     }
